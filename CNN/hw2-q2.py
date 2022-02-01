@@ -25,8 +25,42 @@ class CNN(nn.Module):
         idea of how to us pytorch for this have a look at
         https://pytorch.org/docs/stable/nn.html
         """
-        super(CNN).__init__()
-        # Implement me!
+        super(CNN, self).__init__()
+        
+        self.conv1 = nn.Sequential(
+            # Batch size = N, images 28x28 =>
+            #     x.shape = [N, 1, 28, 28]
+            nn.Conv2d(1, 16, kernel_size=3, stride=1, padding='same'),
+            nn.MaxPool2d(kernel_size=2, stride=2),
+            nn.ReLU()
+            # Convolution with 3x3 filter with same padding and 16 channels =>
+            #     x.shape = [N, 16, 28, 28]
+            # Max pooling with stride of 2 =>
+            #     x.shape = [N, 16, 14, 14]
+        )
+
+        self.conv2 = nn.Sequential(
+            nn.Conv2d(16, 32, kernel_size=3, stride=1, padding=0),
+            nn.MaxPool2d(kernel_size=2, stride=2),
+            nn.ReLU()
+            # Convolution with 3x3 filter without padding and 32 channels =>
+            #     x.shape = [N, 32, 12, 12] since 12 = 14 - 3 + 1
+            # Max pooling with stride of 2 =>
+            #     x.shape = [N, 32, 6, 6]
+        )
+
+        self.fc = nn.Sequential(
+            nn.Linear(1152, 600),
+            nn.ReLU(),
+            nn.Dropout(),
+
+            nn.Linear(600, 120),
+            nn.ReLU(),
+
+            nn.Linear(120, 10),
+            nn.LogSoftmax(dim=1)
+        )
+
         
     def forward(self, x):
         """
@@ -44,7 +78,14 @@ class CNN(nn.Module):
         forward pass -- this is enough for it to figure out how to do the
         backward pass.
         """
-        raise NotImplementedError
+        x = self.conv1(x)
+        x = self.conv2(x)
+
+        # Reshape =>
+        #     x.shape = [N, 1152]
+        x = x.view(-1, 1152)
+
+        return self.fc(x)
         
 
 def train_batch(X, y, model, optimizer, criterion, **kwargs):
@@ -65,7 +106,14 @@ def train_batch(X, y, model, optimizer, criterion, **kwargs):
     This function should return the loss (tip: call loss.item()) to get the
     loss as a numerical value that is not part of the computation graph.
     """
-    raise NotImplementedError
+    optimizer.zero_grad() # sets the gradients "to zero".
+    y_ = model(X)
+    loss = criterion(y_, y)
+    
+    loss.backward() # computes the gradients.
+    optimizer.step() # updates weights using the gradients.
+
+    return loss.item()
 
 
 def predict(model, X):
