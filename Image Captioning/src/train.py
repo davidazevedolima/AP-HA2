@@ -129,6 +129,7 @@ def plot(plottable, ylabel='', name=''):
     plt.plot(plottable)
     plt.savefig('results/{}.png'.format(name))
     plt.show()
+    plt.close()
 
 
 def configure_seed(seed):
